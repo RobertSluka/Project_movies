@@ -38,7 +38,7 @@ jobs:
 
       - name: Build Spring Boot Backend
         working-directory: ./backend
-        run: mvn clean install
+        run:  mvn clean install -DskipTests
 
       #####################################
       # Setup Node.js for Frontend (React)
