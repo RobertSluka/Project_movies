@@ -3,8 +3,18 @@ name: Build and Test Fullstack Application
 on:
   push:
     branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'nginx.conf/**'
+      - '.github/workflows/**'
   pull_request:
     branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'nginx.conf/**'
+      - '.github/workflows/**'
 
 jobs:
   build:
@@ -12,10 +22,34 @@ jobs:
 
     steps:
       #####################################
-      # Checkout repository
+      # Checkout Repository
       #####################################
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      #####################################
+      # Check for Backend Changes
+      #####################################
+      - name: Check Backend Changes
+        id: backend-check
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^backend/'; then
+            echo "changed=true" >> $GITHUB_ENV
+          else
+            echo "changed=false" >> $GITHUB_ENV
+          fi
+
+      #####################################
+      # Check for Frontend Changes
+      #####################################
+      - name: Check Frontend Changes
+        id: frontend-check
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^frontend/'; then
+            echo "changed=true" >> $GITHUB_ENV
+          else
+            echo "changed=false" >> $GITHUB_ENV
+          fi
 
       #####################################
       # Setup Java for Backend (Spring Boot)
@@ -37,12 +71,18 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Build Spring Boot Backend
+        if: env.changed == 'true' && steps.backend-check.outputs.changed == 'true'
         working-directory: ./backend
-        run:  mvn clean install -DskipTests
+        run: mvn clean install -DskipTests
 
       #####################################
       # Setup Node.js for Frontend (React)
       #####################################
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
       - name: Cache Node modules
         uses: actions/cache@v4
         with:
@@ -52,43 +92,40 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Install Frontend Dependencies
+        if: env.changed == 'true' && steps.frontend-check.outputs.changed == 'true'
         working-directory: ./frontend/movies_jpa_frontend
         run: npm install
 
       - name: Build React Frontend
+        if: env.changed == 'true' && steps.frontend-check.outputs.changed == 'true'
         working-directory: ./frontend/movies_jpa_frontend
-        run: npm ci
+        run: npm run build
+
+      #####################################
+      # Login to DockerHub
+      #####################################
       - name: Log in to DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
 
+      #####################################
+      # Build and Push Backend Docker Image
+      #####################################
       - name: Build and Push Backend Docker Image
+        if: env.changed == 'true' && steps.backend-check.outputs.changed == 'true'
         working-directory: ./backend
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/backend:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/backend:latest
 
+      #####################################
+      # Build and Push Frontend Docker Image
+      #####################################
       - name: Build and Push Frontend Docker Image
+        if: env.changed == 'true' && steps.frontend-check.outputs.changed == 'true'
         working-directory: ./frontend/movies_jpa_frontend
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/frontend:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/frontend:latest
-
-      #####################################
-      # Run Tests for Backend and Frontend
-      #####################################
-      # - name: Run Backend Tests
-      #   working-directory: ./backend
-      #   run: mvn test
-
-      # - name: Run Frontend Tests
-      #   working-directory: ./frontend
-      #   run: npm test -- --watchAll=false
-
-      #####################################
-      # Optional: Deploy (example placeholder)
-      #####################################
-      # - name: Deploy Application
-      #   run: echo "Deploying application..."
