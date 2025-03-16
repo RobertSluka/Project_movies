@@ -129,3 +129,18 @@ jobs:
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/frontend:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/frontend:latest
+      #####################################
+      # Deploy to DigitalOcean via SSH
+      #####################################
+      - name: Deploy to DigitalOcean via SSH
+        if: steps.backend-check.outputs.changed == 'true' || steps.frontend-check.outputs.changed == 'true'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_VM_HOST }}
+          username: ${{ secrets.DO_VM_USER }}
+          key: ${{ secrets.DO_VM_SSH_KEY }}
+          script: |
+            cd /home/deployer/app
+            docker-compose pull
+            docker-compose up -d --build
+            docker image prune -f
