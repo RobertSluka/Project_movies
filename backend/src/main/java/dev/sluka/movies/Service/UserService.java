@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -13,6 +14,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.sluka.movies.DTO.UserDTO;
 import dev.sluka.movies.Entity.Role;
@@ -44,6 +48,9 @@ public class UserService {
 
     @Transactional
     public UserDTO registerUser(UserDTO userDTO) {
+        if(userRepository.existsByUserName(userDTO.getUserName())){
+            throw new RuntimeException("Username is already used");
+        }
         User user = new User();
         user.setUserName(userDTO.getUserName());
         user.setPassword(bCryptPasswordEncoder.encode(userDTO.getPassword()));
@@ -60,7 +67,7 @@ public class UserService {
             roles.add(defaultRole);
         } else {
             for (String roleName : userDTO.getRoles()) {
-                Role role = roleRepository.findByName(roleName);
+                Role role = roleRepository.findByName(roleName.toUpperCase());
                 if (role == null) {
                     throw new RuntimeException("Role " + roleName + " not found in the database");
                 }
@@ -73,6 +80,17 @@ public class UserService {
     
         // Convert User to UserDTO before returning
         return new UserDTO(savedUser);
+    }
+
+    @Transactional
+    public void deleteUser(String userName) {
+        User user = userRepository.findByUserName(userName);
+        
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+    
+        userRepository.deleteByUserName(userName);
     }
     
 
@@ -117,7 +135,18 @@ public class UserService {
     
             resetFailedAttempts(user.getUserName());
     
-            return jwtService.generateToken(new UserDTO(user));
+        String accessToken = jwtService.generateToken(new UserDTO(user));
+        // String refreshToken = jwtService.generateRefreshToken(new UserDTO(user));
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            return objectMapper.writeValueAsString(Map.of(
+                "accessToken", accessToken
+                // "refreshToken", refreshToken
+            ));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error converting tokens to JSON", e);
+        }
         } catch (Exception e) {
             increaseFailedAttempts(user);
     

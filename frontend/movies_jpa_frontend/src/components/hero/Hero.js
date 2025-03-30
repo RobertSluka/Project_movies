@@ -5,13 +5,22 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCirclePlay } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from "react-router-dom";
 import Button from 'react-bootstrap/Button';
+// import { jwtDecode } from 'jwt-decode';
+
+
+// const token = localStorage.getItem('token');
+// const decoded = jwtDecode(token);
+// const userName = decoded.sub || decoded.userName;
 
 const Hero = ({ movies }) => {
   const navigate = useNavigate();
-
   function reviews(movieId) {
     navigate(`/Reviews/${movieId}`);
   }
+
+//   function addMovie(userId) {
+//     navigate(`/watchList/${userId}`);
+//   }
 
   return (
     <div className ='movie-carousel-container'>
@@ -41,6 +50,10 @@ const Hero = ({ movies }) => {
                                         <div className="movie-review-button-container">
                                             <Button variant ="info" onClick={() => reviews(movie.imdbId)} >Reviews</Button>
                                         </div>
+{/* 
+                                        <div className="movie-review-button-container">
+                                            <Button variant ="info" onClick={() => addMovie(user.imdbId)} >Add to Watch List</Button>
+                                        </div> */}
                                     </div>
                                 </div>
                             </div>

@@ -1,7 +1,8 @@
 import Hero from '../hero/Hero';
 
 const Home = ({ movies }) => {
-  console.log('Movies in Home:', movies); // Debugging Line
+  console.log("Movies in Home:", movies ?? "No movies or undefined");
+
 
   return (
     <div>

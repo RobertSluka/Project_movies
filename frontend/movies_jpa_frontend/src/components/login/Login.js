@@ -7,7 +7,9 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+
   const navigate = useNavigate();
+
 
 
   const handleSubmit = async (event) => {
@@ -22,15 +24,19 @@ const Login = () => {
         userName: username.trim(),
         password: password.trim(),
       });
+      console.log('Login Response:', response.data);
+
 
       console.log('Login Response:', response.data);
       const token = response.data.token || response.data;
 
       if (token) {
         localStorage.setItem('token', token);
-        setError(null);
-        alert('Login successful!');
+        
+
+        alert('Login successful');
         navigate('/');
+     
       } else {
         setError('Login failed! No token received.');
       }
@@ -38,7 +44,9 @@ const Login = () => {
       const errorMsg = err.response?.data?.message || 'Login failed!';
       setError(errorMsg);
     }
+  
   };
+
 
   return (
     <Container 

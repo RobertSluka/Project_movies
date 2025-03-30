@@ -15,6 +15,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -50,9 +51,10 @@ public class WebSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(
                         request -> request
-                                .requestMatchers("/register", "/login").permitAll()
-                                .requestMatchers("/api/movies/**", "/user/**","/api/reviews/**").hasRole("USER")
+                                .requestMatchers("/register", "/login", "/refresh-token").permitAll()
+                                .requestMatchers("/api/movies/**","/movies/**", "/user/**","/api/reviews/**").hasRole("USER")
                                 .requestMatchers("/admin/**").hasRole("ADMIN")
+                                .requestMatchers("/api/movies/**").permitAll()
                                 .anyRequest().authenticated()
                             
                 )

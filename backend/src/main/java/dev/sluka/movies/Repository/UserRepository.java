@@ -18,6 +18,10 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     User findByEmail(String email);
 
+    Boolean existsByUserName(String userName);
+
+    void deleteByUserName(String userName);
+
     @Transactional
     @Modifying
     @Query("UPDATE User u SET u.password = :password WHERE u.userName = :username")
