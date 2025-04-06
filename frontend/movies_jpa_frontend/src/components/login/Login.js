@@ -1,51 +1,87 @@
-import React, { useState } from 'react';
+import React, { useState ,useRef,useEffect} from 'react';
 import api from '../../api/axiosConfig';
 import { Container, Form, Button, Card, Alert } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+
 
 const Login = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
+
+  const { setAuth } = useAuth();
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
+
+  const userRef = useRef();
+  const errRef = useRef();
 
 
+  const [user, setUser] = useState('');
+  const [pwd, setPwd] = useState('');
+  const [errMsg, setErrMsg] = useState('');
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
 
-    if (!username.trim() || !password.trim()) {
-      setError("Username and password are required.");
-      return;
-  }
+  useEffect(() => {
+    userRef.current.focus();
+  }, [])
+
+  useEffect(() => {
+    setErrMsg('');  
+  }, [user, pwd])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      const response = await api.post('/login', {
-        userName: username.trim(),
-        password: password.trim(),
-      });
-      console.log('Login Response:', response.data);
-
-
-      console.log('Login Response:', response.data);
-      const token = response.data.token || response.data;
-
-      if (token) {
-        localStorage.setItem('token', token);
+        const response = await api.post("/login",
+            JSON.stringify({ userName: user, password: pwd }),
+            {
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                withCredentials: true
+            }
+        );
         
-
-        alert('Login successful');
-        navigate('/');
-     
-      } else {
-        setError('Login failed! No token received.');
-      }
+        const { accessToken, refreshToken, roles } = response.data;
+        
+        if (!accessToken) {
+            throw new Error("No access token received");
+        }
+        
+        // Store tokens
+        localStorage.setItem('accessToken', accessToken);
+        if (refreshToken) {
+            localStorage.setItem('refreshToken', refreshToken);
+        }
+        
+        // Set auth context
+        setAuth({ 
+            user, 
+            roles: roles ? roles.split(',') : [], 
+            accessToken,
+            refreshToken,
+            isAuthenticated: true
+        });
+        
+        setUser('');
+        setPwd('');
+        navigate(from, { replace: true });
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Login failed!';
-      setError(errorMsg);
+        console.error("Login error:", err);
+        if (!err?.response) {
+            setErrMsg('No Server Response');
+        } else if (err.response?.status === 400) {
+            setErrMsg('Missing Username or Password');
+        } else if (err.response?.status === 401) {
+            setErrMsg('Unauthorized');
+        } else {
+            setErrMsg('Login Failed');
+        }
+        errRef.current.focus();
     }
-  
-  };
+}
 
 
   return (
@@ -63,16 +99,20 @@ const Login = () => {
       }}>
         <Card.Body>
           <h2 className="text-center mb-4" style={{ color: '#ffffff' }}>Login</h2>
-
-          {error && <Alert variant="danger">{error}</Alert>}
+                  {errMsg && (
+          <Alert ref={errRef} variant="danger" className="text-center" tabIndex={-1}>
+            {errMsg}
+          </Alert>
+          )}
 
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3">
               <Form.Label style={{ color: '#bbbbbb' }}>Username</Form.Label>
               <Form.Control
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                ref = {userRef}
+                value={user}
+                onChange={(e) => setUser(e.target.value)}
                 placeholder="Enter your username"
                 required
                 style={{ backgroundColor: '#2a2a2a', color: '#ffffff', borderColor: '#444' }}
@@ -83,8 +123,8 @@ const Login = () => {
               <Form.Label style={{ color: '#bbbbbb' }}>Password</Form.Label>
               <Form.Control
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={pwd}
+                onChange={(e) => setPwd(e.target.value)}
                 placeholder="Enter your password"
                 required
                 style={{ backgroundColor: '#2a2a2a', color: '#ffffff', borderColor: '#444' }}

@@ -28,15 +28,10 @@ public class JwtService {
     private String secretKey ;
 
     public String generateToken(UserDTO userDto) {
-        Map<String, Object> claims
-                = new HashMap<>();
+        Map<String, Object> claims = new HashMap<>();
+        Date issuedAt = new Date(System.currentTimeMillis());
+        Date expiration = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24);
 
-                Date issuedAt = new Date(System.currentTimeMillis());
-                Date expiration = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24);
-
-                System.out.println("Generating token for: " + userDto.getUserName());
-                System.out.println("Issued at: " + issuedAt);
-                System.out.println("Expires at: " + expiration);
         return Jwts
                 .builder()
                 .claims()
@@ -49,28 +44,31 @@ public class JwtService {
                 .signWith(generateKey())
                 .compact();
     }
-    // public String generateRefreshToken(UserDTO userDto) {
-    //     Map<String, Object> claims = new HashMap<>();
+
+    public String generateRefreshToken(UserDTO userDto) {
+        Map<String, Object> claims = new HashMap<>();
+        Date issuedAt = new Date(System.currentTimeMillis());
+        Date expiration = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7);
     
-    //     return Jwts
-    //             .builder()
-    //             .claims()
-    //             .add(claims)
-    //             .subject(userDto.getUserName())
-    //             .issuer("DCB")
-    //             .issuedAt(new Date(System.currentTimeMillis()))
-    //             .expiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7)) // 7 days
-    //             .and()
-    //             .signWith(generateKey())
-    //             .compact();
-    // }
+        return Jwts
+                .builder()
+                .claims()
+                .add(claims)
+                .subject(userDto.getUserName())
+                .issuer("DCB")
+                .issuedAt(issuedAt)
+                .expiration(expiration)
+                .and()
+                .signWith(generateKey())
+                .compact();
+    }
+
     private SecretKey generateKey() {
         byte[] decode
                 = Decoders.BASE64.decode(getSecretKey());
 
         return Keys.hmacShaKeyFor(decode);
     }
-
 
     public String getSecretKey() {
         return secretKey ;
@@ -87,19 +85,16 @@ public class JwtService {
 
     private Claims extractClaims(String token) {
         try {
-        System.out.println("🔍 Parsing token in extractClaims(): " + token);
-        return Jwts
-                .parser()
-                .verifyWith(generateKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    } catch (ExpiredJwtException e) {
-        System.out.println("❌ Token expired at: " + e.getClaims().getExpiration());
-        System.out.println("❌ Offending token: " + e.getClaims());
-        throw e;
+            return Jwts
+                    .parser()
+                    .verifyWith(generateKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (ExpiredJwtException e) {
+            throw e;
+        }
     }
-}
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String userName = extractUserName(token);

@@ -24,6 +24,8 @@ import dev.sluka.movies.Service.CustomUserDetailsService;
 import dev.sluka.movies.Service.JwtService;
 import dev.sluka.movies.Service.UserService;
 import jakarta.validation.Valid;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 public class UserController {
@@ -55,39 +57,47 @@ public ResponseEntity<UserDTO> register(@RequestBody UserDTO userDto) {
     return ResponseEntity.ok(registeredUser);
 }
 
-
-
 @PostMapping("/login")
-public ResponseEntity<String> login(@RequestBody UserDTO user) {
-  
+public ResponseEntity<Map<String, String>> login(@RequestBody UserDTO user) {
     String tokens = userService.verify(user);
-    return ResponseEntity.ok(tokens);
-  
+    
+    ObjectMapper objectMapper = new ObjectMapper();
+    try {
+        Map<String, String> responseMap = objectMapper.readValue(tokens, Map.class);
+        return ResponseEntity.ok(responseMap);
+    } catch (JsonProcessingException e) {
+        return ResponseEntity.status(500).body(Map.of("error", "Error processing response"));
+    }
 }
 
-// @PostMapping("/refresh-token")
-// public ResponseEntity<Map<String, String>> refreshAccessToken(@RequestBody Map<String, String> request) {
-//     String refreshToken = request.get("refreshToken");
-//     String username = request.get("username");
+@PostMapping("/refresh-token")
+public ResponseEntity<Map<String, String>> refreshAccessToken(@RequestBody Map<String, String> request) {
+    String refreshToken = request.get("refreshToken");
 
-//     UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+    try {
+        String username = jwtService.extractUserName(refreshToken);
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
 
-//     if (!jwtService.isTokenValid(refreshToken, userDetails)) {
-//         return ResponseEntity.status(401).body(Map.of("error", "Invalid refresh token"));
-//     }
-    
+        if (!jwtService.isTokenValid(refreshToken, userDetails)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid refresh token"));
+        }
 
-//     User user = userRepository.findByUserName(username);
+        User user = userRepository.findByUserName(username);
+        if (user == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+        }
 
-//     if (user == null) {
-//         return ResponseEntity.status(404).body(Map.of("error", "User not found"));
-//     }
+        String newAccessToken = jwtService.generateToken(new UserDTO(user));
+        String newRefreshToken = jwtService.generateRefreshToken(new UserDTO(user));
 
-//     String newAccessToken = jwtService.generateToken(new UserDTO(user));
-
-//     return ResponseEntity.ok(Map.of("accessToken", newAccessToken));
-// }
-
+        return ResponseEntity.ok(Map.of(
+            "accessToken", newAccessToken,
+            "refreshToken", newRefreshToken
+        ));
+    } catch (Exception e) {
+        return ResponseEntity.status(500).body(Map.of("error", "Error refreshing token"));
+    }
+}
 
 @PatchMapping("/user/password")
 public ResponseEntity<String> updateUserPassword(@RequestBody @Valid PasswordUpdateDTO request, Principal principal) {

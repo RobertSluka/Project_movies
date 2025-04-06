@@ -5,8 +5,10 @@ import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-
 import java.util.Map;
+import java.util.HashMap;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -135,18 +137,18 @@ public class UserService {
     
             resetFailedAttempts(user.getUserName());
     
-        String accessToken = jwtService.generateToken(new UserDTO(user));
-        // String refreshToken = jwtService.generateRefreshToken(new UserDTO(user));
+            String accessToken = jwtService.generateToken(new UserDTO(user));
+            String refreshToken = jwtService.generateRefreshToken(new UserDTO(user));
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            return objectMapper.writeValueAsString(Map.of(
-                "accessToken", accessToken
-                // "refreshToken", refreshToken
-            ));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error converting tokens to JSON", e);
-        }
+            Map<String, String> tokenMap = new HashMap<>();
+            tokenMap.put("accessToken", accessToken);
+            tokenMap.put("refreshToken", refreshToken);
+            tokenMap.put("roles", user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.joining(",")));
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.writeValueAsString(tokenMap);
         } catch (Exception e) {
             increaseFailedAttempts(user);
     
