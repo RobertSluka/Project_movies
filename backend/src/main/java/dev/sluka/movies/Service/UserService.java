@@ -3,6 +3,7 @@ package dev.sluka.movies.Service;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Map;
@@ -94,7 +95,29 @@ public class UserService {
     
         userRepository.deleteByUserName(userName);
     }
+
+
+   
+
+
     
+    
+    @Transactional
+    public List<UserDTO> getAllUsers() {
+        List<User> users = userRepository.findAll();
+
+        return users.stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+        }
+        
+        
+
+
+    private UserDTO convertToDTO(User user) {
+        // Map relevant fields from User to UserDTO
+        return new UserDTO(user);
+    }
 
 
     public User registerUserWithRole(String username, String password, String roleName) {
@@ -223,6 +246,9 @@ public class UserService {
     
         String hashedPassword = bCryptPasswordEncoder.encode(newPassword);
        userRepository.updatePassword(username, hashedPassword);
+    }
+    public List<Role> getAllRoles() {
+        return roleRepository.findAll();
     }
    
 }

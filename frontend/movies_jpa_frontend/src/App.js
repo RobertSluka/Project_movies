@@ -1,6 +1,5 @@
 import './App.css';
 import React from 'react';
-
 import api from './api/axiosConfig';
 import {useState, useEffect} from 'react';
 import Layout from './components/Layout';
@@ -15,6 +14,7 @@ import Login from './components/login/Login';
 import Register from './components/register/Register';
 import { useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthProvider';
+import AdminPanel from "./components/adminPanel/adminPanel.js"
 
 function AppContent() {
   const [movies, setMovies] = useState();
@@ -51,23 +51,24 @@ function AppContent() {
 
   return (
     <div className="App">
-      <Header/>
       <Routes>
-        <Route path="/" element={<Layout/>}>
-          <Route index element={<Home movies={movies} />} ></Route>
-          <Route path="watchlist" element={<WatchList movies={movies} />} ></Route>
-          <Route path="/Trailer/:ytTrailerId" element={<Trailer/>}></Route>
-          <Route path="/Reviews/:movieId" element ={
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home movies={movies} />} />
+          <Route path="/watchlist" element={<WatchList movies={movies} />} />
+          <Route path="/Trailer/:ytTrailerId" element={<Trailer/>} />
+          <Route path="/Reviews/:movieId" element={
             <Reviews 
-              getMovieData = {getMovieData} 
+              getMovieData={getMovieData} 
               movie={movie} 
-              reviews ={reviews} 
-              setReviews = {setReviews}
-            />}></Route>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="*" element = {<NotFound/>}></Route>
+              reviews={reviews} 
+              setReviews={setReviews}
+            />
+          } />
+          <Route path="/userPanel" element={<AdminPanel />} />
         </Route>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="*" element={<NotFound/>} />
       </Routes> 
     </div>
   );

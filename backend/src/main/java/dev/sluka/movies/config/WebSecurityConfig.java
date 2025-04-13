@@ -1,5 +1,3 @@
-
-
 package dev.sluka.movies.config;
 
 import dev.sluka.movies.Service.CustomUserDetailsService;
@@ -52,11 +50,11 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(
                         request -> request
                                 .requestMatchers("/register", "/login", "/refresh-token").permitAll()
-                                .requestMatchers("/api/movies/**","/movies/**", "/user/**","/api/reviews/**").hasRole("USER")
-                                .requestMatchers("/admin/**").hasRole("ADMIN")
+                                .requestMatchers("/ws/**").permitAll() // Allow all WebSocket endpoints
+                                .requestMatchers("/api/movies/**","/movies/**", "/user/**","/api/reviews/**","/topic/**").hasRole("USER")
+                                .requestMatchers("/admin/**","/users/all","/roles/all").hasRole("ADMIN")
                                 .requestMatchers("/api/movies/**").permitAll()
                                 .anyRequest().authenticated()
-                            
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
                 // .formLogin(form -> form

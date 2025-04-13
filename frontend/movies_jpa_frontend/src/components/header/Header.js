@@ -22,7 +22,8 @@ return (
                         navbarScroll
                     >
                     <NavLink className ="nav-link" to="/">Home</NavLink>
-                    <NavLink className ="nav-link" to="/watchList">Watch List</NavLink>      
+                    {/* <NavLink className ="nav-link" to="/watchList">Watch List</NavLink>  */}
+                    <NavLink className ="nav-link" to="/userPanel">Admin panel</NavLink>     
                 </Nav>
                 <NavLink to="/login">
             <Button variant="outline-info" className="me-2">Login</Button>

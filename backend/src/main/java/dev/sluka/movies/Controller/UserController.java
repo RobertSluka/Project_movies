@@ -1,6 +1,7 @@
 package dev.sluka.movies.Controller;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -18,10 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import dev.sluka.movies.DTO.PasswordUpdateDTO;
 import dev.sluka.movies.DTO.UserDTO;
+import dev.sluka.movies.Entity.Role;
 import dev.sluka.movies.Entity.User;
+import dev.sluka.movies.Entity.UserRole;
 import dev.sluka.movies.Repository.UserRepository;
 import dev.sluka.movies.Service.CustomUserDetailsService;
 import dev.sluka.movies.Service.JwtService;
+import dev.sluka.movies.Service.RoleService;
 import dev.sluka.movies.Service.UserService;
 import jakarta.validation.Valid;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -34,21 +38,40 @@ private final UserService userService;
 
 private final UserRepository userRepository;
 
+private final RoleService roleService;
+
 private final JwtService jwtService;
 private final CustomUserDetailsService customUserDetailsService;
 
 public UserController(UserRepository userRepository, UserService userService, JwtService jwtService,CustomUserDetailsService
-customUserDetailsService) {
+customUserDetailsService,RoleService roleService) {
     this.userRepository = userRepository;
     this.userService = userService;
     this.jwtService = jwtService;
     this.customUserDetailsService = customUserDetailsService;
+    this.roleService = roleService;
 }
 @GetMapping("/whoami")
 public ResponseEntity<?> whoami(Authentication authentication) {
     System.out.println("Logged in user: " + authentication.getName());
     System.out.println("Authorities: " + authentication.getAuthorities());
     return ResponseEntity.ok(authentication);
+}
+
+@GetMapping("/users/all")
+public List<UserDTO> getAllUsers() {
+    return userService.getAllUsers();
+}
+
+
+@GetMapping("/user/roles/all")
+public List<UserRole> getAllUserRoles() {
+    return roleService.getAllUserRoles();
+}
+
+@GetMapping("/roles/all")
+public List<Role> getAllRoles() {
+    return userService.getAllRoles();
 }
 
 @PostMapping("/register")
@@ -112,6 +135,21 @@ public ResponseEntity<String> deleteUser(@PathVariable String username, Principa
 
     userService.deleteUser(username);
     return ResponseEntity.ok("User deleted successfully");
+}
+@DeleteMapping("/admin/remove-roles/{username}")
+public ResponseEntity<?> removeUserRoles(@PathVariable String username) {
+    try {
+        User user = userRepository.findByUserName(username);
+        if (user == null) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+        
+        user.getRoles().clear();
+        userRepository.save(user);
+        return ResponseEntity.ok().build();
+    } catch (Exception e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
 }
 // @DeleteMapping("/admin/delete/{userId}")
 // public ResponseEntity<String> deleteUser(@PathVariable int userId) {

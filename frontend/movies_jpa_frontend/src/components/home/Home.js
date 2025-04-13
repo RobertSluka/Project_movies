@@ -1,30 +1,30 @@
-import Hero from '../hero/Hero';
+import React from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+import MovieCard from '../movieCard/MovieCard';
+import Chat from '../chat/Chat';
+import { useAuth } from '../../context/AuthProvider';
 
 const Home = ({ movies }) => {
-  console.log("Movies in Home:", movies ?? "No movies or undefined");
+    const { auth } = useAuth();
 
-
-  return (
-    <div>
-      <h1>Movie List</h1>
-
-      {/* Render Hero only if movies is an array */}
-      {Array.isArray(movies) && movies.length > 0 ? (
-        <Hero movies={movies} />
-      ) : (
-        <p>Loading...</p>
-      )}
-
-      {/* Safe mapping with null checks */}
-      {Array.isArray(movies) &&
-        movies.map((movie) => (
-          <div key={movie.imdbId}>
-            <h2>{movie.title}</h2>
-            <p>Release Date: {movie.releaseDate}</p>
-          </div>
-        ))}
-    </div>
-  );
+    return (
+        <Container>
+            <Row className="mb-4">
+                {movies?.map((movie) => (
+                    <Col key={movie.imdbId} xs={12} sm={6} md={4} lg={3} className="mb-4">
+                        <MovieCard movie={movie} />
+                    </Col>
+                ))}
+            </Row>
+            {auth?.isAuthenticated && (
+                <Row>
+                    <Col>
+                        <Chat />
+                    </Col>
+                </Row>
+            )}
+        </Container>
+    );
 };
 
 // const Home = ({ movies }) => {
